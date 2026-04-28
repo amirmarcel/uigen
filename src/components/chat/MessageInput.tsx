@@ -30,8 +30,8 @@ export function MessageInput({
     <form onSubmit={handleSubmit} className="relative p-4 bg-white border-t border-neutral-200/60">
       <div className="relative max-w-4xl mx-auto">
         <textarea
-          value={input}
-          onChange={handleInputChange}
+          value={input ?? ''}
+          onChange={handleInputChange ?? (() => {})}
           onKeyDown={handleKeyDown}
           placeholder="Describe the React component you want to create..."
           disabled={isLoading}
@@ -40,10 +40,10 @@ export function MessageInput({
         />
         <button 
           type="submit" 
-          disabled={isLoading || !input.trim()}
+          disabled={isLoading || !(input ?? '').trim()}
           className="absolute right-3 bottom-3 p-2.5 rounded-lg transition-all hover:bg-blue-50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent group"
         >
-          <Send className={`h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 ${isLoading || !input.trim() ? 'text-neutral-300' : 'text-blue-600'}`} />
+          <Send className={`h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 ${isLoading || !(input ?? '').trim() ? 'text-neutral-300' : 'text-blue-600'}`} />
         </button>
       </div>
     </form>

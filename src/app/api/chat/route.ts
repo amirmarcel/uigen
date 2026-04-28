@@ -1,6 +1,6 @@
 import type { FileNode } from "@/lib/file-system";
 import { VirtualFileSystem } from "@/lib/file-system";
-import { streamText, appendResponseMessages } from "ai";
+import { convertToModelMessages, streamText } from "ai";
 import { buildStrReplaceTool } from "@/lib/tools/str-replace";
 import { buildFileManagerTool } from "@/lib/tools/file-manager";
 import { prisma } from "@/lib/prisma";
@@ -10,19 +10,22 @@ import { generationPrompt } from "@/lib/prompts/generation";
 
 export async function POST(req: Request) {
   const {
-    messages,
+    messages: uiMessages,
     files,
     projectId,
   }: { messages: any[]; files: Record<string, FileNode>; projectId?: string } =
     await req.json();
 
-  messages.unshift({
-    role: "system",
-    content: generationPrompt,
-    providerOptions: {
-      anthropic: { cacheControl: { type: "ephemeral" } },
+  const messages: any[] = [
+    {
+      role: "system",
+      content: generationPrompt,
+      providerOptions: {
+        anthropic: { cacheControl: { type: "ephemeral" } },
+      },
     },
-  });
+    ...convertToModelMessages(uiMessages),
+  ];
 
   // Reconstruct the VirtualFileSystem from serialized data
   const fileSystem = new VirtualFileSystem();
@@ -54,13 +57,10 @@ export async function POST(req: Request) {
             return;
           }
 
-          // Get the messages from the response
-          const responseMessages = response.messages || [];
-          // Combine original messages with response messages
-          const allMessages = appendResponseMessages({
-            messages: [...messages.filter((m) => m.role !== "system")],
-            responseMessages,
-          });
+          const allMessages = [
+            ...messages.filter((m) => m.role !== "system"),
+            ...(response.messages || []),
+          ];
 
           await prisma.project.update({
             where: {
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
     },
   });
 
-  return result.toDataStreamResponse();
+  return result.toUIMessageStreamResponse();
 }
 
 export const maxDuration = 120;
